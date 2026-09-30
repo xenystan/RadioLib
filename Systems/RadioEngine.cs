@@ -8,7 +8,6 @@ using Terraria.ModLoader;
 
 namespace RadioLib.Systems
 {
-    // json data contract for speaker profiles
     public class JsonRadioProfile
     {
         public string CallSign { get; set; }
@@ -19,7 +18,6 @@ namespace RadioLib.Systems
         public string DefaultAccentColor { get; set; } = "#39FF14";
     }
 
-    // json data contract for individual radio transmissions
     public class JsonTransmission
     {
         public string Profile { get; set; }
@@ -32,7 +30,6 @@ namespace RadioLib.Systems
         public bool Priority { get; set; } = false;
     }
 
-    // wrapper package for deserializing dialogue json files
     public class RadioJsonPackage
     {
         public Dictionary<string, JsonRadioProfile> Profiles { get; set; } = new();
@@ -40,14 +37,12 @@ namespace RadioLib.Systems
         public Dictionary<string, List<string>> Pools { get; set; } = new();
     }
 
-    // core engine managing radio transmission registrations, json parsing and triggering
     public static class RadioEngine
     {
         private static readonly Dictionary<string, JsonTransmission> registeredTransmissions = new();
         private static readonly Dictionary<string, JsonRadioProfile> registeredProfiles = new();
         private static readonly Dictionary<string, List<string>> registeredPools = new();
 
-        // clears all registered json data, profiles and pools
         public static void Clear()
         {
             registeredTransmissions.Clear();
@@ -55,7 +50,6 @@ namespace RadioLib.Systems
             registeredPools.Clear();
         }
 
-        // loads and registers dialogue json files from specified mod path
         public static void LoadJson(Mod mod, string relativePath)
         {
             if (!mod.FileExists(relativePath)) return;
@@ -75,7 +69,6 @@ namespace RadioLib.Systems
                 registeredPools[key] = pool;
         }
 
-        // triggers a registered transmission by id and handles multiplayer sync
         public static void Play(string transmissionId, bool syncNetwork = true)
         {
             if (!registeredTransmissions.TryGetValue(transmissionId, out var jsonTrans))
@@ -126,7 +119,6 @@ namespace RadioLib.Systems
             }, priority: jsonTrans.Priority, syncNetwork: syncNetwork);
         }
 
-        // selects a random transmission id from a pool and triggers it
         public static void PlayRandom(string poolId, bool syncNetwork = true)
         {
             if (registeredPools.TryGetValue(poolId, out var pool) && pool.Count > 0)
@@ -136,7 +128,6 @@ namespace RadioLib.Systems
             }
         }
 
-        // generates dynamic squad callsign with numerical designation
         private static string GetRandomSquadCallsign(List<string> squads)
         {
             string squad = squads[Main.rand.Next(squads.Count)];
@@ -145,7 +136,6 @@ namespace RadioLib.Systems
             return $"{squad} {Main.rand.Next(1, 6)}-{Main.rand.Next(1, 4)}";
         }
 
-        // parses preset color names or hex codes into xna color
         private static Color ParseColor(string colorInput)
         {
             if (string.IsNullOrWhiteSpace(colorInput)) 
@@ -153,7 +143,6 @@ namespace RadioLib.Systems
 
             string cleanInput = colorInput.Trim().ToLowerInvariant();
 
-            // predefined color aliases
             switch (cleanInput)
             {
                 case "red":
@@ -185,7 +174,6 @@ namespace RadioLib.Systems
                     return new Color(180, 70, 255);
             }
 
-            // fallback hex parser
             string hex = cleanInput.Replace("#", "");
             if (hex.Length == 6 && uint.TryParse(hex, System.Globalization.NumberStyles.HexNumber, null, out uint hexVal))
             {
@@ -195,7 +183,7 @@ namespace RadioLib.Systems
                 return new Color(r, g, b);
             }
 
-            return Color.LimeGreen; // default fallback color
+            return Color.LimeGreen;
         }
     }
 }
