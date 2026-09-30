@@ -14,25 +14,20 @@ using Terraria.UI;
 
 namespace RadioLib.Systems
 {
-    // main system handling transmission queue, network sync and ui drawing
     public class RadioSystem : ModSystem
     {
-        // custom font assets for tactical ui overlay
         public static Asset<SpriteFont> FontCallsign { get; private set; }
         public static Asset<SpriteFont> FontRole { get; private set; }
         public static Asset<SpriteFont> FontSubtitleEn { get; private set; }
         public static Asset<SpriteFont> FontSubtitleRu { get; private set; }
 
-        // transmission playback queue and state tracking
         private static readonly Queue<RadioTransmission> transmissionQueue = new();
         private static RadioTransmission activeTransmission;
         private static int currentTimer;
         private static int maxTimer;
 
-        // fade transition duration in ticks
         private const int FadeTicks = 25;
 
-        // loads custom font assets on client side
         public override void Load()
         {
             if (!Main.dedServ)
@@ -51,7 +46,6 @@ namespace RadioLib.Systems
             }
         }
 
-        // unloads assets and clears queue state
         public override void Unload()
         {
             FontCallsign = null;
@@ -62,7 +56,6 @@ namespace RadioLib.Systems
             ClearQueue();
         }
 
-        // resets all current and pending transmissions
         public static void ClearQueue()
         {
             transmissionQueue.Clear();
@@ -71,13 +64,11 @@ namespace RadioLib.Systems
             maxTimer = 0;
         }
 
-        // adds transmission directly to local client queue without network sync
         public static void EnqueueLocal(RadioTransmission transmission)
         {
             transmissionQueue.Enqueue(transmission);
         }
 
-        // broadcasts transmission data across clients or queues locally
         public static void SendTransmission(RadioTransmission transmission, bool priority = false, bool syncNetwork = true)
         {
             if (priority)
@@ -85,7 +76,6 @@ namespace RadioLib.Systems
                 ClearQueue();
             }
 
-            // serialize transmission packet for multiplayer synchronization
             if (syncNetwork && Main.netMode != NetmodeID.SinglePlayer)
             {
                 ModPacket packet = RadioLib.Instance.GetPacket();
@@ -115,14 +105,12 @@ namespace RadioLib.Systems
                     packet.Send(-1, -1);
             }
 
-            // add to client side display queue
             if (Main.netMode != NetmodeID.Server)
             {
                 transmissionQueue.Enqueue(transmission);
             }
         }
 
-        // updates current active transmission lifecycle and resolves assets
         public override void UpdateUI(GameTime gameTime)
         {
             if (Main.netMode == NetmodeID.Server) return;
@@ -133,13 +121,11 @@ namespace RadioLib.Systems
                 currentTimer = activeTransmission.Duration;
                 maxTimer = activeTransmission.Duration;
 
-                // resolve portrait texture asset from path
                 if (activeTransmission.Portrait == null && !string.IsNullOrEmpty(activeTransmission.PortraitPath) && ModContent.HasAsset(activeTransmission.PortraitPath))
                 {
                     activeTransmission.Portrait = ModContent.Request<Texture2D>(activeTransmission.PortraitPath);
                 }
 
-                // resolve transmission audio asset from path
                 if (!activeTransmission.TransmitSound.HasValue && !string.IsNullOrEmpty(activeTransmission.SoundPath))
                 {
                     activeTransmission.TransmitSound = new SoundStyle(activeTransmission.SoundPath) { Volume = activeTransmission.SoundVolume };
@@ -157,7 +143,6 @@ namespace RadioLib.Systems
             }
         }
 
-        // registers custom interface layer into terraria ui pipeline
         public override void ModifyInterfaceLayers(List<GameInterfaceLayer> layers)
         {
             if (Main.netMode == NetmodeID.Server) return;
@@ -179,7 +164,6 @@ namespace RadioLib.Systems
             }
         }
 
-        // checks whether subtitle text contains cyrillic characters
         private static bool ContainsCyrillic(string text)
         {
             if (string.IsNullOrEmpty(text)) return false;
@@ -191,7 +175,6 @@ namespace RadioLib.Systems
             return false;
         }
 
-        // resolves font asset based on current language or text content
         private static SpriteFont GetSubtitleFont(string text)
         {
             bool isRussian = Language.ActiveCulture.Name == "ru-RU" || ContainsCyrillic(text);
@@ -205,7 +188,6 @@ namespace RadioLib.Systems
             return null;
         }
 
-        // renders tactical radio overlay and subtitle box
         private static void DrawHUD(SpriteBatch spriteBatch)
         {
             if (activeTransmission == null) return;
@@ -329,12 +311,10 @@ namespace RadioLib.Systems
             }
         }
 
-        // applies crt scanlines, chromatic aberration and slice displacement effects to portrait
         private static void DrawGlitchedPortrait(SpriteBatch spriteBatch, Texture2D texture, Rectangle destRect, float alpha)
         {
             Texture2D pixel = TextureAssets.MagicPixel.Value;
 
-            // chromatic aberration offset
             if (Main.rand.NextBool(3))
             {
                 int splitOffset = Main.rand.Next(-5, 6);
@@ -342,7 +322,6 @@ namespace RadioLib.Systems
                 spriteBatch.Draw(texture, new Rectangle(destRect.X - splitOffset, destRect.Y, destRect.Width, destRect.Height), Color.Cyan * (0.5f * alpha));
             }
 
-            // horizontal slicing displacement
             if (Main.rand.NextBool(4))
             {
                 int sliceCount = Main.rand.Next(4, 10);
@@ -369,13 +348,11 @@ namespace RadioLib.Systems
                 spriteBatch.Draw(texture, destRect, Color.White * alpha);
             }
 
-            // crt scanline lines
             for (int y = destRect.Y; y < destRect.Y + destRect.Height; y += 4)
             {
                 spriteBatch.Draw(pixel, new Rectangle(destRect.X, y, destRect.Width, 2), Color.Black * (0.4f * alpha));
             }
 
-            // random signal interference noise lines
             if (Main.rand.NextBool(2))
             {
                 int noiseY = Main.rand.Next(destRect.Y, destRect.Y + destRect.Height);
