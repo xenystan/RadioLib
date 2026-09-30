@@ -1,0 +1,8 @@
+displayName = Hazardicate: RADIOLIB
+author = R E B E L
+version = 1.0.0
+noCompile = false
+homepage = https://discord.gg/Bm28Sr8xSU
+hideCode = false
+hideResources = false
+includeSource = true
